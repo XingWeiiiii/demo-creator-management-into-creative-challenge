@@ -17,7 +17,8 @@ export default function EditBrief() {
   const [creatorDesc, setCreatorDesc] = useState("");
   const [videoSuggestions, setVideoSuggestions] = useState("");
   const [reviewVideo, setReviewVideo] = useState(true);
-  const [selectedCreatorIds, setSelectedCreatorIds] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [poolCategory, setPoolCategory] = useState<"all" | "collaborator">("all");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -250,7 +251,7 @@ export default function EditBrief() {
 
         {/* Creator Pool - NEW FEATURE */}
         <section className="bg-card rounded-lg border p-6">
-          <CreatorPoolPicker selectedIds={selectedCreatorIds} onChange={setSelectedCreatorIds} videoType={videoType} />
+          <CreatorPoolPicker selectedTags={selectedTags} onTagsChange={setSelectedTags} poolCategory={poolCategory} onPoolCategoryChange={setPoolCategory} videoType={videoType} />
         </section>
 
         {/* Authorizations */}

@@ -1,79 +1,57 @@
 import { useState, useMemo } from "react";
-import { Check, ChevronDown, Search, X, Users, Zap, AlertTriangle } from "lucide-react";
-import { mockCreators, POOL_CATEGORIES, CUSTOM_TAGS, FOLLOWER_THRESHOLD, formatNumber, type Creator } from "@/data/mockCreators";
+import { Check, Users, Zap, AlertTriangle } from "lucide-react";
+import { mockCreators, POOL_CATEGORIES, CUSTOM_TAGS, FOLLOWER_THRESHOLD, formatNumber } from "@/data/mockCreators";
 import { Badge } from "@/components/ui/badge";
 
 type AssignMode = "auto" | "manual";
 type PoolCategory = "all" | "collaborator";
 
 interface Props {
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
+  selectedTags: string[];
+  onTagsChange: (tags: string[]) => void;
+  poolCategory: PoolCategory;
+  onPoolCategoryChange: (cat: PoolCategory) => void;
   videoType: "creator_post" | "creator_video";
 }
 
-export default function CreatorPoolPicker({ selectedIds, onChange, videoType }: Props) {
+/** Count eligible creators for a given tag */
+function getTagEligibleCount(tag: string, isCreatorVideo: boolean): { total: number; eligible: number } {
+  const matched = mockCreators.filter((c) => c.tags.includes(tag));
+  const eligible = isCreatorVideo
+    ? matched.filter((c) => c.followers >= FOLLOWER_THRESHOLD)
+    : matched;
+  return { total: matched.length, eligible: eligible.length };
+}
+
+/** Count for pool categories */
+function getPoolCategoryCount(cat: PoolCategory, isCreatorVideo: boolean): { total: number; eligible: number } {
+  const matched = cat === "all" ? mockCreators : mockCreators.filter((c) => c.tags.includes("Collaborator"));
+  const eligible = isCreatorVideo
+    ? matched.filter((c) => c.followers >= FOLLOWER_THRESHOLD)
+    : matched;
+  return { total: matched.length, eligible: eligible.length };
+}
+
+export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCategory, onPoolCategoryChange, videoType }: Props) {
   const [mode, setMode] = useState<AssignMode>("auto");
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [poolCategory, setPoolCategory] = useState<PoolCategory>("all");
-  const [selectedCustomTags, setSelectedCustomTags] = useState<string[]>([]);
 
   const isCreatorVideo = videoType === "creator_video";
 
-  const filtered = useMemo(() => {
-    return mockCreators.filter((c) => {
-      const matchSearch = !search || c.handle.toLowerCase().includes(search.toLowerCase());
-
-      // Pool category filter
-      let matchPool = true;
-      if (poolCategory === "collaborator") {
-        matchPool = c.tags.includes("Collaborator");
-      }
-      // "all" = all creators who mentioned the brand (no filter)
-
-      // Custom tag filter
-      const matchTags = selectedCustomTags.length === 0 || selectedCustomTags.some((t) => c.tags.includes(t));
-
-      return matchSearch && matchPool && matchTags;
-    });
-  }, [search, poolCategory, selectedCustomTags]);
-
-  const selectedCreators = mockCreators.filter((c) => selectedIds.includes(c.id));
-
-  const isCreatorEligible = (creator: Creator) => {
-    if (!isCreatorVideo) return true;
-    return creator.followers >= FOLLOWER_THRESHOLD;
+  const toggleTag = (tag: string) => {
+    onTagsChange(
+      selectedTags.includes(tag) ? selectedTags.filter((t) => t !== tag) : [...selectedTags, tag]
+    );
   };
-
-  const toggleCreator = (creator: Creator) => {
-    if (!isCreatorEligible(creator)) return;
-    const id = creator.id;
-    onChange(selectedIds.includes(id) ? selectedIds.filter((i) => i !== id) : [...selectedIds, id]);
-  };
-
-  const toggleCustomTag = (tag: string) => {
-    setSelectedCustomTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
-  };
-
-  const selectAllFiltered = () => {
-    const eligible = filtered.filter(isCreatorEligible);
-    const allFilteredIds = eligible.map((c) => c.id);
-    const newIds = [...new Set([...selectedIds, ...allFilteredIds])];
-    onChange(newIds);
-  };
-
-  const clearAll = () => onChange([]);
 
   const handleModeChange = (newMode: AssignMode) => {
     setMode(newMode);
     if (newMode === "auto") {
-      onChange([]);
-      setOpen(false);
+      onTagsChange([]);
+      onPoolCategoryChange("all");
     }
   };
 
-  const ineligibleCount = isCreatorVideo ? filtered.filter((c) => !isCreatorEligible(c)).length : 0;
+  const poolCount = getPoolCategoryCount(poolCategory, isCreatorVideo);
 
   return (
     <div className="space-y-4">
@@ -146,175 +124,92 @@ export default function CreatorPoolPicker({ selectedIds, onChange, videoType }: 
           </div>
           <p className="font-medium text-sm">Pick from your pool</p>
           <p className="text-xs text-muted-foreground mt-1">Manually select from your managed creators, filterable by pool and tags</p>
-          {mode === "manual" && selectedCreators.length > 0 && (
-            <Badge variant="secondary" className="mt-2 text-[10px]">{selectedCreators.length} selected</Badge>
+          {mode === "manual" && selectedTags.length > 0 && (
+            <Badge variant="secondary" className="mt-2 text-[10px]">{selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}</Badge>
           )}
         </button>
       </div>
 
       {/* Manual mode content */}
       {mode === "manual" && (
-        <div className="space-y-3 pt-1">
-          {/* Selected creators display */}
-          {selectedCreators.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {selectedCreators.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center gap-1.5 bg-accent text-accent-foreground px-2.5 py-1 rounded-full text-sm"
-                >
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium">
-                    {c.handle[0].toUpperCase()}
-                  </div>
-                  {c.handle}
-                  <button onClick={() => toggleCreator(c)} className="ml-0.5 hover:text-destructive">
-                    <X className="w-3.5 h-3.5" />
+        <div className="space-y-4 pt-1">
+          {/* Pool category tabs */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Creator pool</p>
+            <div className="flex gap-2">
+              {POOL_CATEGORIES.map((cat) => {
+                const counts = getPoolCategoryCount(cat.value as PoolCategory, isCreatorVideo);
+                return (
+                  <button
+                    key={cat.value}
+                    onClick={() => onPoolCategoryChange(cat.value as PoolCategory)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                      poolCategory === cat.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-secondary text-secondary-foreground border-border hover:border-primary"
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className="ml-1.5 text-xs opacity-75">
+                      {counts.eligible}{isCreatorVideo && counts.eligible !== counts.total ? `/${counts.total}` : ""}
+                    </span>
                   </button>
-                </div>
-              ))}
-              <button onClick={clearAll} className="text-sm text-destructive hover:underline px-2">
-                Clear all
-              </button>
+                );
+              })}
             </div>
-          )}
+          </div>
 
-          {/* Toggle dropdown */}
-          <button
-            onClick={() => setOpen(!open)}
-            className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm hover:bg-secondary transition-colors w-full justify-center"
-          >
-            <Users className="w-4 h-4" />
-            {selectedCreators.length === 0 ? "Select creators" : "Continue selecting"}
-            <ChevronDown className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} />
-          </button>
-
-          {/* Dropdown panel */}
-          {open && (
-            <div className="border rounded-lg bg-card shadow-lg overflow-hidden">
-              <div className="p-3 border-b space-y-3">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search creators..."
-                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-
-                {/* Pool category tabs */}
-                <div className="flex gap-2">
-                  {POOL_CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.value}
-                      onClick={() => setPoolCategory(cat.value as PoolCategory)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                        poolCategory === cat.value
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Custom tags */}
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1.5">Custom tags</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {CUSTOM_TAGS.map((tag) => (
-                      <button
-                        key={tag}
-                        onClick={() => toggleCustomTag(tag)}
-                        className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
-                          selectedCustomTags.includes(tag)
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary text-secondary-foreground border-border hover:border-primary"
-                        }`}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {filtered.length} creator{filtered.length !== 1 ? "s" : ""}
-                    {isCreatorVideo && ineligibleCount > 0 && (
-                      <span className="text-amber-600 dark:text-amber-400"> · {ineligibleCount} ineligible (below 50K)</span>
-                    )}
-                  </span>
-                  <button onClick={selectAllFiltered} className="text-primary hover:underline text-xs">
-                    Select all eligible
+          {/* Custom tags with counts */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Filter by tags</p>
+            <div className="flex flex-wrap gap-2">
+              {CUSTOM_TAGS.map((tag) => {
+                const counts = getTagEligibleCount(tag, isCreatorVideo);
+                const isSelected = selectedTags.includes(tag);
+                if (counts.total === 0) return null;
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTag(tag)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-colors ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-secondary text-secondary-foreground border-border hover:border-primary"
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3 h-3" />}
+                    {tag}
+                    <Badge variant={isSelected ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 ml-0.5">
+                      {counts.eligible}{isCreatorVideo && counts.eligible !== counts.total ? `/${counts.total}` : ""}
+                    </Badge>
                   </button>
-                </div>
-              </div>
+                );
+              })}
+            </div>
+          </div>
 
-              <div className="max-h-80 overflow-y-auto">
-                {filtered.map((creator) => {
-                  const isSelected = selectedIds.includes(creator.id);
-                  const eligible = isCreatorEligible(creator);
-                  return (
-                    <button
-                      key={creator.id}
-                      onClick={() => toggleCreator(creator)}
-                      disabled={!eligible}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                        !eligible
-                          ? "opacity-50 cursor-not-allowed bg-muted/30"
-                          : isSelected
-                            ? "bg-accent/50 hover:bg-accent/70"
-                            : "hover:bg-secondary/50"
-                      }`}
-                    >
-                      <div
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                          !eligible
-                            ? "border-muted-foreground/20"
-                            : isSelected
-                              ? "bg-primary border-primary"
-                              : "border-muted-foreground/30"
-                        }`}
-                      >
-                        {isSelected && eligible && <Check className="w-3 h-3 text-primary-foreground" />}
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium shrink-0">
-                        {creator.handle[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate">{creator.handle}</span>
-                          <span className="text-xs text-muted-foreground">{creator.country}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {creator.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className={`text-xs ${!eligible ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground"}`}>
-                          {formatNumber(creator.followers)} followers
-                        </div>
-                        <div className="text-xs text-muted-foreground">{creator.engagement}% eng.</div>
-                        {!eligible && (
-                          <span className="text-[10px] text-amber-600 dark:text-amber-400">Below 50K</span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-                {filtered.length === 0 && (
-                  <div className="py-8 text-center text-sm text-muted-foreground">No matching creators</div>
+          {/* Summary */}
+          <div className="p-3 rounded-lg bg-secondary/50 border border-border">
+            <div className="flex items-center justify-between">
+              <div className="text-sm">
+                <span className="font-medium text-foreground">{poolCount.eligible}</span>
+                <span className="text-muted-foreground"> eligible creator{poolCount.eligible !== 1 ? "s" : ""}</span>
+                {selectedTags.length > 0 && (
+                  <span className="text-muted-foreground"> · filtered by {selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}</span>
                 )}
               </div>
+              {selectedTags.length > 0 && (
+                <button onClick={() => onTagsChange([])} className="text-xs text-destructive hover:underline">
+                  Clear filters
+                </button>
+              )}
             </div>
-          )}
+            {isCreatorVideo && poolCount.eligible < poolCount.total && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                {poolCount.total - poolCount.eligible} creator{poolCount.total - poolCount.eligible !== 1 ? "s" : ""} ineligible (below 50K followers)
+              </p>
+            )}
+          </div>
 
           {/* Creator Post info */}
           {!isCreatorVideo && (
