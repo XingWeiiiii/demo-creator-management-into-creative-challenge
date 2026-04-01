@@ -249,7 +249,7 @@ export default function EditBrief() {
         </section>
 
         {/* Creator Pool - NEW FEATURE */}
-        <section className="bg-card rounded-lg border p-6 border-primary/30 ring-1 ring-primary/10">
+        <section className="bg-card rounded-lg border p-6">
           <CreatorPoolPicker selectedIds={selectedCreatorIds} onChange={setSelectedCreatorIds} />
         </section>
 
