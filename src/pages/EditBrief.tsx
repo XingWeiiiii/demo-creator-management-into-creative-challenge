@@ -251,7 +251,7 @@ export default function EditBrief() {
 
         {/* Creator Pool - NEW FEATURE */}
         <section className="bg-card rounded-lg border p-6">
-          <CreatorPoolPicker selectedIds={selectedCreatorIds} onChange={setSelectedCreatorIds} videoType={videoType} />
+          <CreatorPoolPicker selectedTags={selectedTags} onTagsChange={setSelectedTags} poolCategory={poolCategory} onPoolCategoryChange={setPoolCategory} videoType={videoType} />
         </section>
 
         {/* Authorizations */}

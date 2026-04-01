@@ -124,8 +124,8 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCate
           </div>
           <p className="font-medium text-sm">Pick from your pool</p>
           <p className="text-xs text-muted-foreground mt-1">Manually select from your managed creators, filterable by pool and tags</p>
-          {mode === "manual" && selectedCreators.length > 0 && (
-            <Badge variant="secondary" className="mt-2 text-[10px]">{selectedCreators.length} selected</Badge>
+          {mode === "manual" && selectedTags.length > 0 && (
+            <Badge variant="secondary" className="mt-2 text-[10px]">{selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}</Badge>
           )}
         </button>
       </div>
