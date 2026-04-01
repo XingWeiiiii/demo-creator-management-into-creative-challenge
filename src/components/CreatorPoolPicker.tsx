@@ -219,6 +219,7 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCate
             </p>
           )}
         </div>
+      )}
     </div>
   );
 }
