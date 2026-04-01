@@ -219,25 +219,6 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCate
             </p>
           )}
         </div>
-      )}
-                  );
-                })}
-                {filtered.length === 0 && (
-                  <div className="py-8 text-center text-sm text-muted-foreground">No matching creators</div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Creator Post info */}
-          {!isCreatorVideo && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <span className="inline-block w-1 h-1 rounded-full bg-emerald-500" />
-              Creator Post — no follower threshold. All creators in your pool are eligible.
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 }
