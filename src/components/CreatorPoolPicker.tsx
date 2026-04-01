@@ -1,79 +1,57 @@
 import { useState, useMemo } from "react";
-import { Check, ChevronDown, Search, X, Users, Zap, AlertTriangle } from "lucide-react";
-import { mockCreators, POOL_CATEGORIES, CUSTOM_TAGS, FOLLOWER_THRESHOLD, formatNumber, type Creator } from "@/data/mockCreators";
+import { Check, Users, Zap, AlertTriangle } from "lucide-react";
+import { mockCreators, POOL_CATEGORIES, CUSTOM_TAGS, FOLLOWER_THRESHOLD, formatNumber } from "@/data/mockCreators";
 import { Badge } from "@/components/ui/badge";
 
 type AssignMode = "auto" | "manual";
 type PoolCategory = "all" | "collaborator";
 
 interface Props {
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
+  selectedTags: string[];
+  onTagsChange: (tags: string[]) => void;
+  poolCategory: PoolCategory;
+  onPoolCategoryChange: (cat: PoolCategory) => void;
   videoType: "creator_post" | "creator_video";
 }
 
-export default function CreatorPoolPicker({ selectedIds, onChange, videoType }: Props) {
+/** Count eligible creators for a given tag */
+function getTagEligibleCount(tag: string, isCreatorVideo: boolean): { total: number; eligible: number } {
+  const matched = mockCreators.filter((c) => c.tags.includes(tag));
+  const eligible = isCreatorVideo
+    ? matched.filter((c) => c.followers >= FOLLOWER_THRESHOLD)
+    : matched;
+  return { total: matched.length, eligible: eligible.length };
+}
+
+/** Count for pool categories */
+function getPoolCategoryCount(cat: PoolCategory, isCreatorVideo: boolean): { total: number; eligible: number } {
+  const matched = cat === "all" ? mockCreators : mockCreators.filter((c) => c.tags.includes("Collaborator"));
+  const eligible = isCreatorVideo
+    ? matched.filter((c) => c.followers >= FOLLOWER_THRESHOLD)
+    : matched;
+  return { total: matched.length, eligible: eligible.length };
+}
+
+export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCategory, onPoolCategoryChange, videoType }: Props) {
   const [mode, setMode] = useState<AssignMode>("auto");
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [poolCategory, setPoolCategory] = useState<PoolCategory>("all");
-  const [selectedCustomTags, setSelectedCustomTags] = useState<string[]>([]);
 
   const isCreatorVideo = videoType === "creator_video";
 
-  const filtered = useMemo(() => {
-    return mockCreators.filter((c) => {
-      const matchSearch = !search || c.handle.toLowerCase().includes(search.toLowerCase());
-
-      // Pool category filter
-      let matchPool = true;
-      if (poolCategory === "collaborator") {
-        matchPool = c.tags.includes("Collaborator");
-      }
-      // "all" = all creators who mentioned the brand (no filter)
-
-      // Custom tag filter
-      const matchTags = selectedCustomTags.length === 0 || selectedCustomTags.some((t) => c.tags.includes(t));
-
-      return matchSearch && matchPool && matchTags;
-    });
-  }, [search, poolCategory, selectedCustomTags]);
-
-  const selectedCreators = mockCreators.filter((c) => selectedIds.includes(c.id));
-
-  const isCreatorEligible = (creator: Creator) => {
-    if (!isCreatorVideo) return true;
-    return creator.followers >= FOLLOWER_THRESHOLD;
+  const toggleTag = (tag: string) => {
+    onTagsChange(
+      selectedTags.includes(tag) ? selectedTags.filter((t) => t !== tag) : [...selectedTags, tag]
+    );
   };
-
-  const toggleCreator = (creator: Creator) => {
-    if (!isCreatorEligible(creator)) return;
-    const id = creator.id;
-    onChange(selectedIds.includes(id) ? selectedIds.filter((i) => i !== id) : [...selectedIds, id]);
-  };
-
-  const toggleCustomTag = (tag: string) => {
-    setSelectedCustomTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
-  };
-
-  const selectAllFiltered = () => {
-    const eligible = filtered.filter(isCreatorEligible);
-    const allFilteredIds = eligible.map((c) => c.id);
-    const newIds = [...new Set([...selectedIds, ...allFilteredIds])];
-    onChange(newIds);
-  };
-
-  const clearAll = () => onChange([]);
 
   const handleModeChange = (newMode: AssignMode) => {
     setMode(newMode);
     if (newMode === "auto") {
-      onChange([]);
-      setOpen(false);
+      onTagsChange([]);
+      onPoolCategoryChange("all");
     }
   };
 
-  const ineligibleCount = isCreatorVideo ? filtered.filter((c) => !isCreatorEligible(c)).length : 0;
+  const poolCount = getPoolCategoryCount(poolCategory, isCreatorVideo);
 
   return (
     <div className="space-y-4">
