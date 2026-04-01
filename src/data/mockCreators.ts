@@ -13,8 +13,14 @@ export interface Creator {
   videos: string[];
 }
 
-export const CREATOR_TAGS = [
-  "Collaborator",
+/** Built-in pool categories */
+export const POOL_CATEGORIES = [
+  { value: "all", label: "All", description: "All creators who have mentioned your brand" },
+  { value: "collaborator", label: "Collaborator", description: "Creators you've previously run ads with" },
+] as const;
+
+/** Custom user-defined tags */
+export const CUSTOM_TAGS = [
   "DG-NEW tag",
   "Zhiyuan Pre L...",
   "Travel",
@@ -25,6 +31,11 @@ export const CREATOR_TAGS = [
   "Fitness",
   "Tech",
 ];
+
+/** All selectable tag values (for backward compat) */
+export const CREATOR_TAGS = ["Collaborator", ...CUSTOM_TAGS];
+
+export const FOLLOWER_THRESHOLD = 50000;
 
 export const mockCreators: Creator[] = [
   {
