@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
-import { Check, Users, Zap, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { Check, Users, Zap, AlertTriangle, ShieldCheck, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { mockCreators, POOL_CATEGORIES, CUSTOM_TAGS, FOLLOWER_THRESHOLD, formatNumber } from "@/data/mockCreators";
 import { Badge } from "@/components/ui/badge";
 
