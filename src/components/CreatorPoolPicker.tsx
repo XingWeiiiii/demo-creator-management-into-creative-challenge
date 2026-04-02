@@ -7,12 +7,16 @@ import { Badge } from "@/components/ui/badge";
 type AssignMode = "auto" | "manual";
 type PoolCategory = "all" | "collaborator";
 
+const MIN_CREATOR_THRESHOLD = 5;
+
 interface Props {
   selectedTags: string[];
   onTagsChange: (tags: string[]) => void;
   poolCategory: PoolCategory;
   onPoolCategoryChange: (cat: PoolCategory) => void;
   videoType: "creator_post" | "creator_video";
+  supplementWithSystem: boolean;
+  onSupplementChange: (val: boolean) => void;
 }
 
 /** Count eligible creators for a given tag */
