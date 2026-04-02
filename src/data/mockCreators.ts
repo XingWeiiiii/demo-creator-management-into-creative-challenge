@@ -13,27 +13,20 @@ export interface Creator {
   videos: string[];
 }
 
-/** Built-in pool categories */
-export const POOL_CATEGORIES = [
-  { value: "all", label: "All", description: "All creators who have mentioned your brand" },
-  { value: "collaborator", label: "Collaborator", description: "Creators you've previously run ads with" },
-] as const;
-
-/** Custom user-defined tags */
-export const CUSTOM_TAGS = [
-  "DG-NEW tag",
-  "Zhiyuan Pre L...",
-  "Travel",
-  "Beauty",
-  "Gaming",
-  "Fashion",
-  "Food",
-  "Fitness",
-  "Tech",
+/** All available pool tags (system + custom) */
+export const POOL_TAGS = [
+  { value: "All", label: "All", description: "All creators who have mentioned your brand", isSystem: true },
+  { value: "Collaborator", label: "Collaborator", description: "Creators you've previously run ads with", isSystem: true },
+  { value: "DG-NEW tag", label: "DG-NEW tag", isSystem: false },
+  { value: "Zhiyuan Pre L...", label: "Zhiyuan Pre L...", isSystem: false },
+  { value: "Travel", label: "Travel", isSystem: false },
+  { value: "Beauty", label: "Beauty", isSystem: false },
+  { value: "Gaming", label: "Gaming", isSystem: false },
+  { value: "Fashion", label: "Fashion", isSystem: false },
+  { value: "Food", label: "Food", isSystem: false },
+  { value: "Fitness", label: "Fitness", isSystem: false },
+  { value: "Tech", label: "Tech", isSystem: false },
 ];
-
-/** All selectable tag values (for backward compat) */
-export const CREATOR_TAGS = ["Collaborator", ...CUSTOM_TAGS];
 
 export const FOLLOWER_THRESHOLD = 50000;
 
