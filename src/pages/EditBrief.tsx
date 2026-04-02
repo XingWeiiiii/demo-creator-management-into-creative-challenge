@@ -18,7 +18,7 @@ export default function EditBrief() {
   const [videoSuggestions, setVideoSuggestions] = useState("");
   const [reviewVideo, setReviewVideo] = useState(true);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [poolCategory, setPoolCategory] = useState<"all" | "collaborator">("all");
+  const [supplementWithSystem, setSupplementWithSystem] = useState(true);
   const [supplementWithSystem, setSupplementWithSystem] = useState(true);
 
   return (
