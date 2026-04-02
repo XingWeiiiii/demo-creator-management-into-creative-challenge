@@ -1,62 +1,70 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Check, Users, Zap, AlertTriangle, ShieldCheck, AlertCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { mockCreators, POOL_CATEGORIES, CUSTOM_TAGS, FOLLOWER_THRESHOLD, formatNumber } from "@/data/mockCreators";
+import { mockCreators, POOL_TAGS, FOLLOWER_THRESHOLD, formatNumber } from "@/data/mockCreators";
 import { Badge } from "@/components/ui/badge";
 
 type AssignMode = "auto" | "manual";
-type PoolCategory = "all" | "collaborator";
 
 const MIN_CREATOR_THRESHOLD = 5;
 
 interface Props {
   selectedTags: string[];
   onTagsChange: (tags: string[]) => void;
-  poolCategory: PoolCategory;
-  onPoolCategoryChange: (cat: PoolCategory) => void;
   videoType: "creator_post" | "creator_video";
   supplementWithSystem: boolean;
   onSupplementChange: (val: boolean) => void;
 }
 
-/** Count eligible creators for a given tag */
+/** Count eligible creators for a given tag. "All" means all creators. */
 function getTagEligibleCount(tag: string, isCreatorVideo: boolean): { total: number; eligible: number } {
-  const matched = mockCreators.filter((c) => c.tags.includes(tag));
+  const matched = tag === "All" ? mockCreators : mockCreators.filter((c) => c.tags.includes(tag));
   const eligible = isCreatorVideo
     ? matched.filter((c) => c.followers >= FOLLOWER_THRESHOLD)
     : matched;
   return { total: matched.length, eligible: eligible.length };
 }
 
-/** Count for pool categories */
-function getPoolCategoryCount(cat: PoolCategory, isCreatorVideo: boolean): { total: number; eligible: number } {
-  const matched = cat === "all" ? mockCreators : mockCreators.filter((c) => c.tags.includes("Collaborator"));
-  const eligible = isCreatorVideo
-    ? matched.filter((c) => c.followers >= FOLLOWER_THRESHOLD)
-    : matched;
-  return { total: matched.length, eligible: eligible.length };
-}
-
-export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCategory, onPoolCategoryChange, videoType, supplementWithSystem, onSupplementChange }: Props) {
+export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoType, supplementWithSystem, onSupplementChange }: Props) {
   const [mode, setMode] = useState<AssignMode>("auto");
 
   const isCreatorVideo = videoType === "creator_video";
 
   const toggleTag = (tag: string) => {
-    onTagsChange(
-      selectedTags.includes(tag) ? selectedTags.filter((t) => t !== tag) : [...selectedTags, tag]
-    );
+    if (tag === "All") {
+      // "All" is exclusive — selecting it clears others
+      onTagsChange(selectedTags.includes("All") ? [] : ["All"]);
+      return;
+    }
+    // Deselect "All" when picking specific tags
+    const withoutAll = selectedTags.filter((t) => t !== "All");
+    const newTags = withoutAll.includes(tag) ? withoutAll.filter((t) => t !== tag) : [...withoutAll, tag];
+    onTagsChange(newTags);
   };
 
   const handleModeChange = (newMode: AssignMode) => {
     setMode(newMode);
     if (newMode === "auto") {
       onTagsChange([]);
-      onPoolCategoryChange("all");
     }
   };
 
-  const poolCount = getPoolCategoryCount(poolCategory, isCreatorVideo);
+  // Compute total eligible based on selected tags
+  const selectedEligible = useMemo(() => {
+    if (selectedTags.length === 0) return { total: 0, eligible: 0 };
+    if (selectedTags.includes("All")) return getTagEligibleCount("All", isCreatorVideo);
+    // Union of creators across selected tags
+    const ids = new Set<string>();
+    const eligibleIds = new Set<string>();
+    for (const tag of selectedTags) {
+      const matched = mockCreators.filter((c) => c.tags.includes(tag));
+      matched.forEach((c) => {
+        ids.add(c.id);
+        if (!isCreatorVideo || c.followers >= FOLLOWER_THRESHOLD) eligibleIds.add(c.id);
+      });
+    }
+    return { total: ids.size, eligible: eligibleIds.size };
+  }, [selectedTags, isCreatorVideo]);
 
   return (
     <div className="space-y-4">
@@ -72,7 +80,7 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCate
           <div className="text-sm">
             <p className="font-medium text-amber-800 dark:text-amber-300">Creator Video requires 50K+ followers</p>
             <p className="text-amber-700 dark:text-amber-400 mt-0.5">
-              Since Creator Video content is published on your TikTok Business Account (not the creator's), only creators with at least {formatNumber(FOLLOWER_THRESHOLD)} followers are eligible. Creators below this threshold will be greyed out.
+              Since Creator Video content is published on your TikTok Business Account (not the creator's), only creators with at least {formatNumber(FOLLOWER_THRESHOLD)} followers are eligible. Creators below this threshold will be excluded.
             </p>
           </div>
         </div>
@@ -128,7 +136,7 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCate
             </div>
           </div>
           <p className="font-medium text-sm">Pick from your pool</p>
-          <p className="text-xs text-muted-foreground mt-1">Manually select from your managed creators, filterable by pool and tags</p>
+          <p className="text-xs text-muted-foreground mt-1">Select creator tags from your pool to assign specific groups</p>
           {mode === "manual" && selectedTags.length > 0 && (
             <Badge variant="secondary" className="mt-2 text-[10px]">{selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}</Badge>
           )}
@@ -138,52 +146,26 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCate
       {/* Manual mode content */}
       {mode === "manual" && (
         <div className="space-y-4 pt-1">
-          {/* Pool category tabs */}
+          {/* Unified tag selector */}
           <div>
-            <p className="text-xs text-muted-foreground mb-2">Creator pool</p>
-            <div className="flex gap-2">
-              {POOL_CATEGORIES.map((cat) => {
-                const counts = getPoolCategoryCount(cat.value as PoolCategory, isCreatorVideo);
-                return (
-                  <button
-                    key={cat.value}
-                    onClick={() => onPoolCategoryChange(cat.value as PoolCategory)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                      poolCategory === cat.value
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-secondary text-secondary-foreground border-border hover:border-primary"
-                    }`}
-                  >
-                    <span>{cat.label}</span>
-                    <span className="ml-1.5 text-xs opacity-75">
-                      {counts.eligible}{isCreatorVideo && counts.eligible !== counts.total ? `/${counts.total}` : ""}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Custom tags with counts */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-2">Filter by tags</p>
+            <p className="text-xs text-muted-foreground mb-2">Select from your creator pool</p>
             <div className="flex flex-wrap gap-2">
-              {CUSTOM_TAGS.map((tag) => {
-                const counts = getTagEligibleCount(tag, isCreatorVideo);
-                const isSelected = selectedTags.includes(tag);
-                if (counts.total === 0) return null;
+              {POOL_TAGS.map((tag) => {
+                const counts = getTagEligibleCount(tag.value, isCreatorVideo);
+                const isSelected = selectedTags.includes(tag.value);
+                if (counts.total === 0 && tag.value !== "All") return null;
                 return (
                   <button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
+                    key={tag.value}
+                    onClick={() => toggleTag(tag.value)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-colors ${
                       isSelected
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-secondary text-secondary-foreground border-border hover:border-primary"
-                    }`}
+                    } ${tag.isSystem ? "font-medium" : ""}`}
                   >
                     {isSelected && <Check className="w-3 h-3" />}
-                    {tag}
+                    {tag.label}
                     <Badge variant={isSelected ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 ml-0.5">
                       {counts.eligible}{isCreatorVideo && counts.eligible !== counts.total ? `/${counts.total}` : ""}
                     </Badge>
@@ -194,52 +176,53 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCate
           </div>
 
           {/* Summary with threshold logic */}
-          <div className="p-3 rounded-lg bg-secondary/50 border border-border space-y-2.5">
-            {poolCount.eligible >= MIN_CREATOR_THRESHOLD ? (
-              <div className="flex items-start gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    Only your assigned creators will receive this brief.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    <span className="font-medium">{poolCount.eligible}</span> eligible creator{poolCount.eligible !== 1 ? "s" : ""} selected
-                    {selectedTags.length > 0 && <> · filtered by {selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}</>}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
+          {selectedTags.length > 0 && (
+            <div className="p-3 rounded-lg bg-secondary/50 border border-border space-y-2.5">
+              {selectedEligible.eligible >= MIN_CREATOR_THRESHOLD ? (
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                  <p className="text-sm text-foreground">
-                    Based on your selection, estimated eligible creators (<span className="font-medium">{poolCount.eligible}</span>) may not fully cover your video needs. Would you like the system to assign additional creators to help fulfill the order?
-                  </p>
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Only your assigned creators will receive this brief.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      <span className="font-medium">{selectedEligible.eligible}</span> eligible creator{selectedEligible.eligible !== 1 ? "s" : ""} across {selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-2 pl-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={supplementWithSystem}
-                      onCheckedChange={(checked) => onSupplementChange(checked === true)}
-                    />
-                    <span className="text-sm text-foreground">Yes, supplement with system-selected creators</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={!supplementWithSystem}
-                      onCheckedChange={(checked) => onSupplementChange(checked !== true)}
-                    />
-                    <span className="text-sm text-foreground">No, only use my assigned creators</span>
-                  </label>
+              ) : (
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                    <p className="text-sm text-foreground">
+                      Based on your selection, estimated eligible creators (<span className="font-medium">{selectedEligible.eligible}</span>) may not fully cover your video needs. Would you like the system to assign additional creators to help fulfill the order?
+                    </p>
+                  </div>
+                  <div className="space-y-2 pl-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={supplementWithSystem}
+                        onCheckedChange={(checked) => onSupplementChange(checked === true)}
+                      />
+                      <span className="text-sm text-foreground">Yes, supplement with system-selected creators</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={!supplementWithSystem}
+                        onCheckedChange={(checked) => onSupplementChange(checked !== true)}
+                      />
+                      <span className="text-sm text-foreground">No, only use my assigned creators</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
-            )}
-            {isCreatorVideo && poolCount.eligible < poolCount.total && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                {poolCount.total - poolCount.eligible} creator{poolCount.total - poolCount.eligible !== 1 ? "s" : ""} ineligible (below 50K followers)
-              </p>
-            )}
-          </div>
+              )}
+              {isCreatorVideo && selectedEligible.eligible < selectedEligible.total && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {selectedEligible.total - selectedEligible.eligible} creator{selectedEligible.total - selectedEligible.eligible !== 1 ? "s" : ""} ineligible (below 50K followers)
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Creator Post info */}
           {!isCreatorVideo && (
