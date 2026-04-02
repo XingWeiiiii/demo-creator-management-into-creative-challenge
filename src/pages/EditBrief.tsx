@@ -19,6 +19,7 @@ export default function EditBrief() {
   const [reviewVideo, setReviewVideo] = useState(true);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [poolCategory, setPoolCategory] = useState<"all" | "collaborator">("all");
+  const [supplementWithSystem, setSupplementWithSystem] = useState(true);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
