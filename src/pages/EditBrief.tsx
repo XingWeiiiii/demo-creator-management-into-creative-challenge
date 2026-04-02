@@ -18,7 +18,6 @@ export default function EditBrief() {
   const [videoSuggestions, setVideoSuggestions] = useState("");
   const [reviewVideo, setReviewVideo] = useState(true);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [poolCategory, setPoolCategory] = useState<"all" | "collaborator">("all");
   const [supplementWithSystem, setSupplementWithSystem] = useState(true);
 
   return (
@@ -252,7 +251,7 @@ export default function EditBrief() {
 
         {/* Creator Pool - NEW FEATURE */}
         <section className="bg-card rounded-lg border p-6">
-          <CreatorPoolPicker selectedTags={selectedTags} onTagsChange={setSelectedTags} poolCategory={poolCategory} onPoolCategoryChange={setPoolCategory} videoType={videoType} supplementWithSystem={supplementWithSystem} onSupplementChange={setSupplementWithSystem} />
+          <CreatorPoolPicker selectedTags={selectedTags} onTagsChange={setSelectedTags} videoType={videoType} supplementWithSystem={supplementWithSystem} onSupplementChange={setSupplementWithSystem} />
         </section>
 
         {/* Authorizations */}
