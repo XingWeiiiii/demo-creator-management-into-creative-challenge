@@ -37,7 +37,7 @@ function getPoolCategoryCount(cat: PoolCategory, isCreatorVideo: boolean): { tot
   return { total: matched.length, eligible: eligible.length };
 }
 
-export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCategory, onPoolCategoryChange, videoType }: Props) {
+export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCategory, onPoolCategoryChange, videoType, supplementWithSystem, onSupplementChange }: Props) {
   const [mode, setMode] = useState<AssignMode>("auto");
 
   const isCreatorVideo = videoType === "creator_video";
