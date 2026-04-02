@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { mockCreators, CREATOR_TAGS, formatNumber } from "@/data/mockCreators";
+import { mockCreators, POOL_TAGS, formatNumber } from "@/data/mockCreators";
 import { Badge } from "@/components/ui/badge";
 import TopNav from "@/components/TopNav";
 
