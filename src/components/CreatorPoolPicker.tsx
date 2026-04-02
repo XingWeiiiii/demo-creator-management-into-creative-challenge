@@ -193,24 +193,49 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, poolCate
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="p-3 rounded-lg bg-secondary/50 border border-border">
-            <div className="flex items-center justify-between">
-              <div className="text-sm">
-                <span className="font-medium text-foreground">{poolCount.eligible}</span>
-                <span className="text-muted-foreground"> eligible creator{poolCount.eligible !== 1 ? "s" : ""}</span>
-                {selectedTags.length > 0 && (
-                  <span className="text-muted-foreground"> · filtered by {selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}</span>
-                )}
+          {/* Summary with threshold logic */}
+          <div className="p-3 rounded-lg bg-secondary/50 border border-border space-y-2.5">
+            {poolCount.eligible >= MIN_CREATOR_THRESHOLD ? (
+              <div className="flex items-start gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Only your assigned creators will receive this brief.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    <span className="font-medium">{poolCount.eligible}</span> eligible creator{poolCount.eligible !== 1 ? "s" : ""} selected
+                    {selectedTags.length > 0 && <> · filtered by {selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}</>}
+                  </p>
+                </div>
               </div>
-              {selectedTags.length > 0 && (
-                <button onClick={() => onTagsChange([])} className="text-xs text-destructive hover:underline">
-                  Clear filters
-                </button>
-              )}
-            </div>
+            ) : (
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                  <p className="text-sm text-foreground">
+                    Based on your selection, estimated eligible creators (<span className="font-medium">{poolCount.eligible}</span>) may not fully cover your video needs. Would you like the system to assign additional creators to help fulfill the order?
+                  </p>
+                </div>
+                <div className="space-y-2 pl-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={supplementWithSystem}
+                      onCheckedChange={(checked) => onSupplementChange(checked === true)}
+                    />
+                    <span className="text-sm text-foreground">Yes, supplement with system-selected creators</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={!supplementWithSystem}
+                      onCheckedChange={(checked) => onSupplementChange(checked !== true)}
+                    />
+                    <span className="text-sm text-foreground">No, only use my assigned creators</span>
+                  </label>
+                </div>
+              </div>
+            )}
             {isCreatorVideo && poolCount.eligible < poolCount.total && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+              <p className="text-xs text-amber-600 dark:text-amber-400">
                 {poolCount.total - poolCount.eligible} creator{poolCount.total - poolCount.eligible !== 1 ? "s" : ""} ineligible (below 50K followers)
               </p>
             )}
