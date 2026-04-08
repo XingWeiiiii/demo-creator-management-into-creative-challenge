@@ -163,19 +163,19 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
                 const counts = getTagEligibleCount(tag.value, isCreatorVideo);
                 const isSelected = selectedTags.includes(tag.value);
                 return (
-                  <label
+                  <div
                     key={tag.value}
+                    onClick={() => toggleTag(tag.value)}
                     className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0 ${
                       isSelected
                         ? "bg-accent/30 border-primary/20"
                         : "bg-card hover:bg-secondary/50"
                     }`}
-                    onClick={() => toggleTag(tag.value)}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={isSelected}
-                        className="pointer-events-none"
+                        onCheckedChange={() => toggleTag(tag.value)}
                       />
                       <span className="text-sm font-medium text-foreground">{tag.label}</span>
                     </div>
@@ -185,13 +185,13 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
                         <span className="text-xs text-amber-600 ml-1">({counts.total} total)</span>
                       )}
                     </span>
-                  </label>
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Backfill toggle */}
+          {/* Backfill toggle — always visible in list-boosted mode */}
           {selectedTags.length > 0 && (
             <div className="border-t pt-4 space-y-3">
               <div className="flex items-start justify-between gap-4">
