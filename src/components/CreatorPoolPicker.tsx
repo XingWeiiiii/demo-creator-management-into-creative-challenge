@@ -172,7 +172,7 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
                         : "bg-card hover:bg-secondary/50"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleTag(tag.value)}
