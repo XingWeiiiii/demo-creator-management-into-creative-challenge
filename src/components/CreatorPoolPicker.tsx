@@ -1,12 +1,11 @@
 import { useState, useMemo } from "react";
-import { Check, Users, Zap, AlertTriangle, ShieldCheck, AlertCircle } from "lucide-react";
+import { Check, Info, AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { mockCreators, POOL_TAGS, FOLLOWER_THRESHOLD, formatNumber } from "@/data/mockCreators";
 import { Badge } from "@/components/ui/badge";
 
-type AssignMode = "auto" | "manual";
-
-const MIN_CREATOR_THRESHOLD = 5;
+type AssignMode = "auto" | "list-boosted";
 
 interface Props {
   selectedTags: string[];
@@ -16,7 +15,6 @@ interface Props {
   onSupplementChange: (val: boolean) => void;
 }
 
-/** Count eligible creators for a given tag. "All" means all creators. */
 function getTagEligibleCount(tag: string, isCreatorVideo: boolean): { total: number; eligible: number } {
   const matched = tag === "All" ? mockCreators : mockCreators.filter((c) => c.tags.includes(tag));
   const eligible = isCreatorVideo
@@ -32,11 +30,9 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
 
   const toggleTag = (tag: string) => {
     if (tag === "All") {
-      // "All" is exclusive — selecting it clears others
       onTagsChange(selectedTags.includes("All") ? [] : ["All"]);
       return;
     }
-    // Deselect "All" when picking specific tags
     const withoutAll = selectedTags.filter((t) => t !== "All");
     const newTags = withoutAll.includes(tag) ? withoutAll.filter((t) => t !== tag) : [...withoutAll, tag];
     onTagsChange(newTags);
@@ -49,11 +45,9 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
     }
   };
 
-  // Compute total eligible based on selected tags
   const selectedEligible = useMemo(() => {
     if (selectedTags.length === 0) return { total: 0, eligible: 0 };
     if (selectedTags.includes("All")) return getTagEligibleCount("All", isCreatorVideo);
-    // Union of creators across selected tags
     const ids = new Set<string>();
     const eligibleIds = new Set<string>();
     for (const tag of selectedTags) {
@@ -66,170 +60,174 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
     return { total: ids.size, eligible: eligibleIds.size };
   }, [selectedTags, isCreatorVideo]);
 
+  // Filter out tags with 0 creators (except All)
+  const availableTags = POOL_TAGS.filter((tag) => {
+    if (tag.value === "All") return true;
+    return getTagEligibleCount(tag.value, false).total > 0;
+  });
+
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-base font-semibold text-foreground">Creator assignment</h3>
-        <p className="text-sm text-muted-foreground mt-0.5">Choose to let the system auto-match creators or manually pick from your creator pool</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Choose how creators are matched to your brief</p>
       </div>
 
-      {/* Video type eligibility notice */}
-      {isCreatorVideo && (
-        <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-          <div className="text-sm">
-            <p className="font-medium text-amber-800 dark:text-amber-300">Creator Video requires 50K+ followers</p>
-            <p className="text-amber-700 dark:text-amber-400 mt-0.5">
-              Since Creator Video content is published on your TikTok Business Account (not the creator's), only creators with at least {formatNumber(FOLLOWER_THRESHOLD)} followers are eligible. Creators below this threshold will be excluded.
-            </p>
-          </div>
+      {/* Tab-style mode switcher */}
+      <div className="flex border rounded-lg overflow-hidden">
+        <button
+          onClick={() => handleModeChange("auto")}
+          className={`flex-1 py-2.5 px-4 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+            mode === "auto"
+              ? "bg-primary text-primary-foreground"
+              : "bg-card text-foreground hover:bg-secondary"
+          }`}
+        >
+          Auto-assign
+          {mode === "auto" && (
+            <Badge variant="secondary" className="text-[10px] bg-primary-foreground/20 text-primary-foreground border-0">
+              Recommended
+            </Badge>
+          )}
+        </button>
+        <button
+          onClick={() => handleModeChange("list-boosted")}
+          className={`flex-1 py-2.5 px-4 text-sm font-medium transition-colors ${
+            mode === "list-boosted"
+              ? "bg-primary text-primary-foreground"
+              : "bg-card text-foreground hover:bg-secondary"
+          }`}
+        >
+          List-boosted
+        </button>
+      </div>
+
+      {/* Auto mode content */}
+      {mode === "auto" && (
+        <div className="border rounded-lg p-5 space-y-2">
+          <p className="font-medium text-sm text-foreground">Auto-assign</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Matches your brief against creators who've worked with or mentioned your brand, past Content Suite collaborators, and a vetted network of creators in your vertical — giving you the highest chance of hitting your content volume target with diverse, high-quality posts.
+          </p>
         </div>
       )}
 
-      {/* Mode selector */}
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => handleModeChange("auto")}
-          className={`relative border rounded-lg p-4 text-left transition-all ${
-            mode === "auto"
-              ? "border-primary ring-2 ring-ring bg-primary/5"
-              : "hover:border-muted-foreground/30"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Zap className="w-4.5 h-4.5 text-primary" />
-            </div>
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-              mode === "auto" ? "border-primary" : "border-muted-foreground/30"
-            }`}>
-              {mode === "auto" && <div className="w-3 h-3 rounded-full bg-primary" />}
-            </div>
+      {/* List-boosted mode content */}
+      {mode === "list-boosted" && (
+        <div className="border rounded-lg p-5 space-y-5">
+          {/* Explanation banner */}
+          <div className="p-3 rounded-lg bg-accent/50 border border-accent">
+            <p className="text-sm text-foreground">
+              <span className="font-medium">Your selected lists are invited first.</span> Any remaining slots are filled automatically from a wider creator network.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Best for brands with pre-approved creators, an internal creator program, or specific contractual requirements — where who creates the content matters as much as the content itself.
+            </p>
+            <p className="text-xs text-accent-foreground mt-2 flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              For most campaigns, full auto reaches a broader, better-matched pool and delivers stronger results.
+            </p>
           </div>
-          <p className="font-medium text-sm">Auto-assign</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isCreatorVideo
-              ? "System matches eligible creators (50K+ followers) based on your brief"
-              : "System automatically matches the best creators based on your brief content"}
-          </p>
-          {mode === "auto" && (
-            <Badge variant="secondary" className="mt-2 text-[10px]">Recommended</Badge>
-          )}
-        </button>
 
-        <button
-          onClick={() => handleModeChange("manual")}
-          className={`relative border rounded-lg p-4 text-left transition-all ${
-            mode === "manual"
-              ? "border-primary ring-2 ring-ring bg-primary/5"
-              : "hover:border-muted-foreground/30"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center">
-              <Users className="w-4.5 h-4.5 text-foreground" />
+          {/* Creator Video eligibility notice */}
+          {isCreatorVideo && (
+            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-800 dark:text-amber-300">Creator Video requires 50K+ followers</p>
+                <p className="text-amber-700 dark:text-amber-400 mt-0.5">
+                  Only creators with at least {formatNumber(FOLLOWER_THRESHOLD)} followers are eligible for Creator Video.
+                </p>
+              </div>
             </div>
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-              mode === "manual" ? "border-primary" : "border-muted-foreground/30"
-            }`}>
-              {mode === "manual" && <div className="w-3 h-3 rounded-full bg-primary" />}
-            </div>
-          </div>
-          <p className="font-medium text-sm">Pick from your pool</p>
-          <p className="text-xs text-muted-foreground mt-1">Select creator tags from your pool to assign specific groups</p>
-          {mode === "manual" && selectedTags.length > 0 && (
-            <Badge variant="secondary" className="mt-2 text-[10px]">{selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}</Badge>
           )}
-        </button>
-      </div>
 
-      {/* Manual mode content */}
-      {mode === "manual" && (
-        <div className="space-y-4 pt-1">
-          {/* Unified tag selector */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-2">Select from your creator pool</p>
-            <div className="flex flex-wrap gap-2">
-              {POOL_TAGS.map((tag) => {
+          {/* Prioritize creator lists */}
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-sm text-foreground">Prioritize creator lists</p>
+              <p className="text-xs text-muted-foreground mt-0.5">System samples your selected lists first, then fills remaining slots automatically</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Select lists to prioritize</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Lists are defined by <span className="font-semibold text-foreground">Creator Tags</span> — add and manage tags in{" "}
+                <span className="text-primary cursor-pointer hover:underline">Creator Management → Content Suite</span>
+              </p>
+            </div>
+
+            {/* Tag list as checkbox rows */}
+            <div className="space-y-0 border rounded-lg overflow-hidden">
+              {availableTags.map((tag) => {
                 const counts = getTagEligibleCount(tag.value, isCreatorVideo);
                 const isSelected = selectedTags.includes(tag.value);
-                if (counts.total === 0 && tag.value !== "All") return null;
                 return (
-                  <button
+                  <label
                     key={tag.value}
-                    onClick={() => toggleTag(tag.value)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-colors ${
+                    className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0 ${
                       isSelected
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-secondary text-secondary-foreground border-border hover:border-primary"
-                    } ${tag.isSystem ? "font-medium" : ""}`}
+                        ? "bg-accent/30 border-primary/20"
+                        : "bg-card hover:bg-secondary/50"
+                    }`}
+                    onClick={() => toggleTag(tag.value)}
                   >
-                    {isSelected && <Check className="w-3 h-3" />}
-                    {tag.label}
-                    <Badge variant={isSelected ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 ml-0.5">
-                      {counts.eligible}{isCreatorVideo && counts.eligible !== counts.total ? `/${counts.total}` : ""}
-                    </Badge>
-                  </button>
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={isSelected}
+                        className="pointer-events-none"
+                      />
+                      <span className="text-sm font-medium text-foreground">{tag.label}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {counts.eligible} creator{counts.eligible !== 1 ? "s" : ""}
+                      {isCreatorVideo && counts.eligible !== counts.total && (
+                        <span className="text-xs text-amber-600 ml-1">({counts.total} total)</span>
+                      )}
+                    </span>
+                  </label>
                 );
               })}
             </div>
           </div>
 
-          {/* Summary with threshold logic */}
+          {/* Backfill toggle */}
           {selectedTags.length > 0 && (
-            <div className="p-3 rounded-lg bg-secondary/50 border border-border space-y-2.5">
-              {selectedEligible.eligible >= MIN_CREATOR_THRESHOLD ? (
-                <div className="flex items-start gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Only your assigned creators will receive this brief.
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      <span className="font-medium">{selectedEligible.eligible}</span> eligible creator{selectedEligible.eligible !== 1 ? "s" : ""} across {selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}
-                    </p>
-                  </div>
+            <div className="border-t pt-4 space-y-3">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-medium text-sm text-foreground">Allow backfill if list underdelivers</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">System adds recommended creators if your list falls short</p>
+                </div>
+                <Switch
+                  checked={supplementWithSystem}
+                  onCheckedChange={onSupplementChange}
+                />
+              </div>
+
+              {/* Status message */}
+              {supplementWithSystem ? (
+                <div className="p-3 rounded-lg bg-accent/30 border border-accent">
+                  <p className="text-sm text-foreground flex items-center gap-2">
+                    <Info className="w-4 h-4 text-primary shrink-0" />
+                    Your lists will be sampled first. System creators fill any remaining slots to hit your delivery target.
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-2.5">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                    <p className="text-sm text-foreground">
-                      Based on your selection, estimated eligible creators (<span className="font-medium">{selectedEligible.eligible}</span>) may not fully cover your video needs. Would you like the system to assign additional creators to help fulfill the order?
-                    </p>
-                  </div>
-                  <div className="space-y-2 pl-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={supplementWithSystem}
-                        onCheckedChange={(checked) => onSupplementChange(checked === true)}
-                      />
-                      <span className="text-sm text-foreground">Yes, supplement with system-selected creators</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={!supplementWithSystem}
-                        onCheckedChange={(checked) => onSupplementChange(checked !== true)}
-                      />
-                      <span className="text-sm text-foreground">No, only use my assigned creators</span>
-                    </label>
-                  </div>
+                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 space-y-1">
+                  <p className="text-sm text-foreground flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    Restricted to your selected lists only. No system backfill.
+                  </p>
+                  <p className="text-sm font-medium text-primary pl-6">
+                    {selectedEligible.eligible} eligible creator{selectedEligible.eligible !== 1 ? "s" : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground pl-6">
+                    Low pool size may reduce response rate and content volume.
+                  </p>
                 </div>
               )}
-              {isCreatorVideo && selectedEligible.eligible < selectedEligible.total && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  {selectedEligible.total - selectedEligible.eligible} creator{selectedEligible.total - selectedEligible.eligible !== 1 ? "s" : ""} ineligible (below 50K followers)
-                </p>
-              )}
             </div>
-          )}
-
-          {/* Creator Post info */}
-          {!isCreatorVideo && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <span className="inline-block w-1 h-1 rounded-full bg-emerald-500" />
-              Creator Post — no follower threshold. All creators in your pool are eligible.
-            </p>
           )}
         </div>
       )}
