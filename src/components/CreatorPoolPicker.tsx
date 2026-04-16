@@ -107,7 +107,7 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
         <div className="border rounded-lg p-5 space-y-2">
           <p className="font-medium text-sm text-foreground">Auto-assign</p>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Matches your brief against creators who've worked with or mentioned your brand, past Content Suite collaborators, and a vetted network of creators in your vertical — giving you the highest chance of hitting your content volume target with diverse, high-quality posts.
+            Automatically matches your brief to creators who've worked with or mentioned your brand, past Content Suite collaborators, and a vetted network of creators in your vertical — maximizing your chances of hitting your content volume target with diverse, high-quality posts.
           </p>
         </div>
       )}
