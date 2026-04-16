@@ -118,7 +118,7 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
           {/* Explanation banner */}
           <div className="p-3 rounded-lg bg-accent/50 border border-accent">
             <p className="text-sm text-foreground">
-              <span className="font-medium">Your selected lists are invited first.</span> Any remaining slots are filled automatically from a wider creator network.
+              <span className="font-medium">Creators from your selected lists are invited first.</span> Any remaining slots are filled automatically from a wider creator network.
             </p>
             <p className="text-xs text-muted-foreground mt-1.5">
               Best for brands with pre-approved creators, an internal creator program, or specific contractual requirements — where who creates the content matters as much as the content itself.
@@ -152,7 +152,7 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
             <div>
               <p className="text-xs text-muted-foreground mb-1">Select lists to prioritize</p>
               <p className="text-xs text-muted-foreground mb-3">
-                Lists are defined by <span className="font-semibold text-foreground">Creator Tags</span> — add and manage tags in{" "}
+                Lists are based on your <span className="font-semibold text-foreground">Creator Tags</span> — add and manage tags in{" "}
                 <span className="text-primary cursor-pointer hover:underline">Creator Management → Content Suite</span>
               </p>
             </div>
@@ -196,7 +196,7 @@ export default function CreatorPoolPicker({ selectedTags, onTagsChange, videoTyp
             <div className="border-t pt-4 space-y-3">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-medium text-sm text-foreground">Allow backfill if list underdelivers</p>
+                  <p className="font-medium text-sm text-foreground">Auto-fill remaining spots if your lists fall short</p>
                   <p className="text-xs text-muted-foreground mt-0.5">System adds recommended creators if your list falls short</p>
                 </div>
                 <Switch
